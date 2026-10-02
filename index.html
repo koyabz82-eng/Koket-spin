@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Koya Spin</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: linear-gradient(135deg, #141e30, #243b55);
+    color: white;
+    text-align: center;
+    min-height: 100vh;
+    padding: 20px 10px;
+}
+
+h1 {
+    font-size: 38px;
+    margin: 10px 0 5px;
+    letter-spacing: 2px;
+}
+
+.subtitle {
+    margin-bottom: 15px;
+    color: #ddd;
+}
+
+.stats {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.box {
+    background: rgba(255,255,255,0.12);
+    border-radius: 15px;
+    padding: 10px 18px;
+    min-width: 105px;
+}
+
+.box b {
+    display: block;
+    font-size: 18px;
+}
+
+.box span {
+    font-size: 14px;
+    color: #ddd;
+}
+
+.wheel-container {
+    position: relative;
+    width: min(90vw, 400px);
+    height: min(90vw, 400px);
+    margin: 15px auto;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    box-shadow: 0 0 30px rgba(0,0,0,0.5);
+}
+
+.pointer {
+    position: absolute;
+    top: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 18px solid transparent;
+    border-right: 18px solid transparent;
+    border-top: 38px solid white;
+    z-index: 5;
+    filter: drop-shadow(0 2px 3px black);
+}
+
+button {
+    border: none;
+    border-radius: 30px;
+    padding: 15px 45px;
+    font-size: 20px;
+    font-weight: bold;
+    cursor: pointer;
+    background: linear-gradient(90deg, #00ff87, #00bfff);
+    color: #07111f;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+}
+
+button:active {
+    transform: scale(0.95);
+}
+
+.message {
+    margin-top: 18px;
+    font-size: 24px;
+    font-weight: bold;
+    min-height: 35px;
+}
+
+.info {
+    margin-top: 15px;
+    font-size: 14px;
+    color: #ccc;
+    line-height: 1.6;
+}
+</style>
+</head>
+
+<body>
+
+<h1>🎡 KOYA SPIN</h1>
+<div class="subtitle">Spin for FREE! ♾️</div>
+
+<div class="stats">
+    <div class="box">
+        <b id="points">0</b>
+        <span>Points</span>
+    </div>
+
+    <div class="box">
+        <b id="coins">0</b>
+        <span>Coins 🪙</span>
+    </div>
+
+    <div class="box">
+        <b>∞</b>
+        <span>Free Spins</span>
+    </div>
+</div>
+
+<div class="wheel-container">
+    <div class="pointer"></div>
+    <canvas id="wheel" width="600" height="600"></canvas>
+</div>
+
+<button onclick="spin()">🎯 SPIN</button>
+
+<div class="message" id="message">Good luck! 🍀</div>
+
+<div class="info">
+    100,000 Points = 1 Coin 🪙<br>
+    200 Coins = $1 💵
+</div>
+
+<script>
+
+const canvas = document.getElementById("wheel");
+const ctx = canvas.getContext("2d");
+
+const segments = [
+    "10", "20", "30", "40", "50",
+    "60", "70", "80", "90", "100",
+    "110", "120", "130", "140", "150",
+    "160", "170", "180", "190", "200",
+    "TRY", "THANKS"
+];
+
+const colors = [
+    "#ff4757",
+    "#ffa502",
+    "#2ed573",
+    "#1e90ff",
+    "#a55eea",
+    "#ff6b81",
+    "#00cec9",
+    "#eccc68",
+    "#ff7f50",
+    "#70a1ff",
+    "#7bed9f",
+    "#5352ed",
+    "#ff6348",
+    "#1dd1a1",
+    "#feca57",
+    "#48dbfb",
+    "#5f27cd",
+    "#ff9ff3",
+    "#54a0ff",
+    "#00d2d3",
+    "#ff7675",
+    "#fd79a8"
+];
+
+let rotation = 0;
+let spinning = false;
+
+let points = Number(localStorage.getItem("koyaPoints")) || 0;
+let coins = Number(localStorage.getItem("koyaCoins")) || 0;
+
+updateDisplay();
+drawWheel();
+
+function drawWheel() {
+
+    const center = canvas.width / 2;
+    const radius = canvas.width / 2;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    const angle = (Math.PI * 2) / segments.length;
+
+    for (let i = 0; i < segments.length; i++) {
+
+        const start = i * angle;
+        const end = start + angle;
+
+        ctx.beginPath();
+        ctx.moveTo(center, center);
+        ctx.arc(center, center, radius, start, end);
+        ctx.closePath();
+
+        ctx.fillStyle = colors[i];
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+
+        ctx.save();
+
+        ctx.translate(center, center);
+        ctx.rotate(start + angle / 2);
+
+        ctx.textAlign = "right";
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 23px Arial";
+
+        ctx.fillText(segments[i], radius - 25, 8);
+
+        ctx.restore();
+    }
+
+    // Center circle
+    ctx.beginPath();
+    ctx.arc(center, center, 45, 0, Math.PI * 2);
+    ctx.fillStyle = "#111";
+    ctx.fill();
+
+    ctx.fillStyle = "#fff";
+    ctx.font = "bold 17px Arial";
+    ctx.textAlign = "center";
+    ctx.fillText("KOYA", center, center + 6);
+}
+
+function spin() {
+
+    if (spinning) return;
+
+    spinning = true;
+
+    document.getElementById("message").textContent = "Spinning... 🎡";
+
+    const randomIndex = Math.floor(Math.random() * segments.length);
+
+    const segmentAngle = 360 / segments.length;
+
+    const targetAngle =
+        360 * 6 +
+        (360 - randomIndex * segmentAngle - segmentAngle / 2);
+
+    const startRotation = rotation;
+
+    rotation += targetAngle;
+
+    const duration = 5000;
+    const startTime = performance.now();
+
+    function animate(time) {
+
+        const elapsed = time - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Smooth slow-down
+        const ease =
+            1 - Math.pow(1 - progress, 4);
+
+        const current =
+            startRotation +
+            (rotation - startRotation) * ease;
+
+        canvas.style.transform =
+            `rotate(${current}deg)`;
+
+        if (progress < 1) {
+
+            requestAnimationFrame(animate);
+
+        } else {
+
+            spinning = false;
+            result(randomIndex);
+        }
+    }
+
+    requestAnimationFrame(animate);
+}
+
+function result(index) {
+
+    const result = segments[index];
+
+    if (result === "TRY") {
+
+        document.getElementById("message").textContent =
+            "TRY AGAIN 🔄";
+
+    } else if (result === "THANKS") {
+
+        document.getElementById("message").textContent =
+            "እናመሰግናለን 🙏❤️";
+
+    } else {
+
+        const earned = Number(result);
+
+        points += earned;
+
+        document.getElementById("message").textContent =
+            "GOOD! 🎉 +" + earned + " Points";
+
+        convertPoints();
+        saveData();
+        updateDisplay();
+    }
+}
+
+function convertPoints() {
+
+    while (points >= 100000) {
+
+        points -= 100000;
+        coins += 1;
+    }
+}
+
+function saveData() {
+
+    localStorage.setItem(
+        "koyaPoints",
+        points
+    );
+
+    localStorage.setItem(
+        "koyaCoins",
+        coins
+    );
+}
+
+function updateDisplay() {
+
+    document.getElementById("points").textContent =
+        points.toLocaleString();
+
+    document.getElementById("coins").textContent =
+        coins.toLocaleString();
+}
+
+</script>
+
+</body>
+</html>
